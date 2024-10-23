@@ -264,13 +264,14 @@ class Ayuda:
 
 # Menú del servidor 
 class PanelControl:
-    self.logger = Logger(log_file="log_trabajo.csv")
-    self.manejo_Gcode = ManejoGcode()
-    self.robot = Robot(logger=self.logger, manejo_Gcode=self.manejo_Gcode)
-    self.server = None
-    self.ayuda = Ayuda()
-    self.manejo_usuarios = ManejoUsuarios()  # Instancia del manejo de usuarios
-    self.usuario_autenticado = None
+    def __init__(self):
+        self.logger = Logger(log_file="log_trabajo.csv")
+        self.manejo_Gcode = ManejoGcode()
+        self.robot = Robot(logger=self.logger, manejo_Gcode=self.manejo_Gcode)
+        self.server = None
+        self.ayuda = Ayuda()
+        self.manejo_usuarios = ManejoUsuarios()  # Instancia del manejo de usuarios
+        self.usuario_autenticado = None
 
     def iniciar_Servidor(self):
         if self.server is None:
