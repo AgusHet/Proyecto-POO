@@ -80,10 +80,13 @@ class Robot:
             if relatividad=="absoluto":
                 self.posicion=pos_tupla
                 self.logger.guardar_log (f"Movimiento a posicion absoluta {self.posicion} con velocidad {velocidad}", "localhost", "admin", True)
+            
             if relatividad=="relativo":
-                self.posicion[0]=posicion_anterior[0]+pos_tupla[0]
-                self.posicion[1]=posicion_anterior[1]+pos_tupla[1]
-                self.posicion[2]=posicion_anterior[2]+pos_tupla[2]
+
+                x_rel=posicion_anterior[0]+pos_tupla[0]
+                y_rel=posicion_anterior[1]+pos_tupla[1]
+                z_rel=posicion_anterior[2]+pos_tupla[2]
+                self.posicion=(x_rel,y_rel,z_rel)
                 self.logger.guardar_log (f"Movimiento a posicion relativa {self.posicion} con velocidad {velocidad}", "localhost", "admin", True)
 
 
@@ -301,6 +304,7 @@ class PanelControl:
             
         else:
             print("El servidor no esta en ejecucion")
+    
     def autenticar_usuario(self):
         nombre = input("Ingrese su nombre de usuario: ")
         clave = input("Ingrese su contraseña: ")
@@ -312,6 +316,8 @@ class PanelControl:
             self.logger.guardar_log("Intento de autenticación fallido", "localhost", nombre, False)
             print("Usuario o contraseña incorrectos.")
 
+    
+    
     def mostrar_menu(self):
         self.autenticar_usuario()  # Se solicita autenticación al inicio del menú
         if self.usuario_autenticado is None:
@@ -351,7 +357,7 @@ class PanelControl:
             elif  opcion=="6":
                 pos=input("Ingrese posicion (x,y,z): ")
                 vel=input("Ingrese la velocidad:")
-                rel=input("ingrese relativiadad (absoluto o relativo)")
+                rel=input("ingrese relativiadad (absoluto o relativo):")
                 print(self.robot.mover(pos,vel,rel))
 
             elif  opcion=="7":
@@ -395,14 +401,14 @@ class PanelControl:
 # Servidor RPC completo
 class ServidorRPCCompleto:
     
-    def __init__(self, robot,logger,host='localhost', port=8080):
-        
-        self.server=SimpleXMLRPCServer((host,port),allow_none=True) # allow_none=True --> si tus métodos en el servidor pueden devolver o recibir valores None en las solicitudes y respuestas.
-       
-        self.robot=robot
-        self.logger=logger
+    def __init__(self, robot, logger, host='localhost', port=8080):
+        self.server = SimpleXMLRPCServer((host, port), allow_none=True)
+        self.robot = robot
+        self.logger = logger
+        self.authenticated_users = {}  # Almacena usuarios autenticados
 
-        self.server.register_function(self.probarConexion,'probarConexion')
+        self.server.register_function(self.probarConexion, 'probarConexion')
+        self.server.register_function(self.autenticar_usuario, "autenticar_usuario")
         self.server.register_function(self.conectar, "conectar_Robot")
         self.server.register_function(self.desconectar, "desconectar_Robot")
         self.server.register_function(self.activar_Motores, "activar_Motores")
@@ -416,67 +422,78 @@ class ServidorRPCCompleto:
         self.server.register_function(self.iniciar_Aprendizaje, "iniciar_Aprendizaje")
         self.server.register_function(self.finalizar_Aprendizaje, "finalizar_Aprendizaje")
 
-        
-    def probarConexion(self):
-        return 1
-    
-    def conectar(self):
-        self.robot.conectar()
-        return "Robot conectado"
+    def autenticar_usuario(self, nombre, clave):
+        if self.robot.manejo_usuarios.validar_usuario(nombre, clave):
+            self.authenticated_users[nombre] = True
+            return "Usuario autenticado."
+        else:
+            return "Usuario o contraseña incorrectos."
 
-    def desconectar(self):
-        self.robot.desconectar()
-        return "Robot desconectado"
-    def activar_Motores(self):
-        self.robot.activar_Motores()
-        return "Motores activados"
-    
-    def desactivar_Motores(self):
-        self.robot.desactivar_Motores()
-        return "Motores desactivados"
-    
-    def mover(self,posicion,velocidad):
-        self.robot.mover(posicion,velocidad)
-        return "Robot movido con exito"
-    
-    def activar_Efector(self):
-        self.robot.activar_Efector()
-        return "Efector activado"
+    def verificar_autenticacion(self, nombre):
+        return nombre in self.authenticated_users
 
-    def desactivar_Efector(self):
-        self.robot.desactivar_Efector()
-        return "Efector desactivado"
-    
-    def homing(self):
-        self.robot.homing()
-        return "Se ha llevado al robot al origen"
+    def conectar(self, nombre_usuario):
+        if self.verificar_autenticacion(nombre_usuario):
+            return self.robot.conectar()
+        return "Usuario no autenticado."
 
-    def iniciar_Aprendizaje(self):
-        self.robot.iniciar_Aprendizaje()
-        return "Aprendizaje iniciado"
-    def finalizar_Aprendizaje(self):
-        self.robot.finalizar_Aprendizaje()
-        return "Aprendizaje finalizado"
+    def desconectar(self, nombre_usuario):
+        if self.verificar_autenticacion(nombre_usuario):
+            return self.robot.desconectar()
+        return "Usuario no autenticado."
 
-    def cambiar_modo(self):
-        self.robot.cambiar_Modo()
-        return f"Modo cambiado"
+    def activar_Motores(self, nombre_usuario):
+        if self.verificar_autenticacion(nombre_usuario):
+            return self.robot.activar_Motores()
+        return "Usuario no autenticado."
 
-    def mostrar_estado(self):
-        return self.robot.mostrar_Estado()
+    def desactivar_Motores(self, nombre_usuario):
+        if self.verificar_autenticacion(nombre_usuario):
+            return self.robot.desactivar_Motores()
+        return "Usuario no autenticado."
 
-    def mostrar_Ayuda(self):
-        ayuda=Ayuda()  #Intancia de ayuda ver si esta bien por qeu crearia una instancia cada vez que se usa el metodo
-        return ayuda.listar_comandos()
-    
+    def mover(self, nombre_usuario, posicion, velocidad):
+        if self.verificar_autenticacion(nombre_usuario):
+            return self.robot.mover(posicion, velocidad)
+        return "Usuario no autenticado."
+
+    def activar_Efector(self, nombre_usuario):
+        if self.verificar_autenticacion(nombre_usuario):
+            return self.robot.activar_Efector()
+        return "Usuario no autenticado."
+
+    def desactivar_Efector(self, nombre_usuario):
+        if self.verificar_autenticacion(nombre_usuario):
+            return self.robot.desactivar_Efector()
+        return "Usuario no autenticado."
+
+    def homing(self, nombre_usuario):
+        if self.verificar_autenticacion(nombre_usuario):
+            return self.robot.homing()
+        return "Usuario no autenticado."
+
+    def iniciar_Aprendizaje(self, nombre_usuario):
+        if self.verificar_autenticacion(nombre_usuario):
+            return self.robot.iniciar_Aprendizaje()
+        return "Usuario no autenticado."
+
+    def finalizar_Aprendizaje(self, nombre_usuario):
+        if self.verificar_autenticacion(nombre_usuario):
+            return self.robot.finalizar_Aprendizaje()
+        return "Usuario no autenticado."
+
+    def mostrar_estado(self, nombre_usuario):
+        if self.verificar_autenticacion(nombre_usuario):
+            return self.robot.mostrar_Estado()
+        return "Usuario no autenticado."
+
     def iniciar(self):
-        
         self.server.serve_forever()
 
     def detener(self):
-        
         self.server.shutdown()
         print("Servidor RPC detenido")
+
 
 # Iniciar el servidor RPC con el menú interactivo
 if __name__ == "__main__":
