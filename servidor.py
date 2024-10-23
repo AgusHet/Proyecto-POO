@@ -290,6 +290,7 @@ class PanelControl:
             
         else:
             print("El servidor no esta en ejecucion")
+    
     def autenticar_usuario(self):
         nombre = input("Ingrese su nombre de usuario: ")
         clave = input("Ingrese su contraseña: ")
@@ -301,6 +302,8 @@ class PanelControl:
             self.logger.guardar_log("Intento de autenticación fallido", "localhost", nombre, False)
             print("Usuario o contraseña incorrectos.")
 
+    
+    
     def mostrar_menu(self):
         self.autenticar_usuario()  # Se solicita autenticación al inicio del menú
         if self.usuario_autenticado is None:
@@ -389,6 +392,7 @@ class ServidorRPCCompleto:
        
         self.robot=robot
         self.logger=logger
+        self.authenticated_users = {}  # Almacena los usuarios autenticados
 
         self.server.register_function(self.probarConexion,'probarConexion')
         self.server.register_function(self.conectar, "conectar_Robot")

@@ -67,3 +67,7 @@
 2024-10-22 18:08:30, localhost, admin, Activando motores, Exitoso
 2024-10-22 18:08:41, localhost, admin, Movimiento a 2.3,543,2 con velocidad 6.0, Exitoso
 2024-10-22 18:09:00, localhost, admin, Desactivado motores, Exitoso
+2024-10-23 09:56:25, localhost, Raul, Usuario autenticado, Exitoso
+2024-10-23 09:57:20, localhost, rodolfo, Intento de autenticación fallido, Fallido
+2024-10-23 10:15:50, localhost, Raul, Usuario autenticado, Exitoso
+2024-10-23 10:44:43, localhost, Raul, Usuario autenticado, Exitoso
