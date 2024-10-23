@@ -36,7 +36,7 @@ class Robot:
         self.conexion=False
         self.logger.guardar_log("Desconectando al robot", "localhost", "admin", True)
         return "Robot desconectado con éxito."
-
+    
 
 
     def activar_Motores(self):
@@ -91,6 +91,7 @@ class Robot:
             self.logger.guardar_log("Efector activado", "localhost", "admin", True)
             if self.aprender:
                 instruccion_Gcode="M3;Activar efector"
+                print("Efector Activado")
                 self.manejo_Gcode.escribir_Instruccion(instruccion_Gcode)
         else:
             return "Error: Robot no conectado o motores apagados."
@@ -102,6 +103,7 @@ class Robot:
             if self.aprender:
                 
                 gcode_instruccion = "M5 ; Desactivar efector"
+                print("Efector Desactivado")
                 self.manejo_Gcode.escribir_Instruccion(gcode_instruccion)
         else:
             return "Error: Robot no conectado o motores apagados."
@@ -198,23 +200,23 @@ class Usuario:
         self.clave = clave
 
 class ManejoUsuarios:
-    def __init__(self, archivo_usuarios="usuarios.pkl"):
+    def __init__(self, archivo_usuarios="usuarios.txt"):
         self.archivo_usuarios = archivo_usuarios
+        self.usuarios = self.cargar_usuarios()
+
+    def cargar_usuarios(self):
+        usuarios = {}
         try:
-            with open(self.archivo_usuarios, "rb") as file:
-                self.usuarios = pickle.load(file)
+            with open(self.archivo_usuarios, "r") as file:
+                for linea in file:
+                    nombre, clave = linea.strip().split(",")
+                    usuarios[nombre] = clave
         except FileNotFoundError:
-            self.usuarios = {}
+            pass
+        return usuarios
 
     def validar_usuario(self, nombre, clave):
-        if nombre in self.usuarios and self.usuarios[nombre] == clave:
-            return True
-        return False
-
-    def agregar_usuario(self, nombre, clave):
-        self.usuarios[nombre] = clave
-        with open(self.archivo_usuarios, "wb") as file:
-            pickle.dump(self.usuarios, file)
+        return self.usuarios.get(nombre) == clave
 
 # Clase Logger para guardar registros
 class Logger:
@@ -262,12 +264,13 @@ class Ayuda:
 
 # Menú del servidor 
 class PanelControl:
-    def __init__(self):    #def __init__(self, servidor,robot): esta es una opcion pero creo que servidor no hace falta
-        self.logger=Logger(log_file="log_trabajo.csv")    #El panel de control se incia pasandole una instancia de robot, que deberia ser la misma con la que trabaja el servidor 
-        self.manejo_Gcode=ManejoGcode()  #Instancia de manejo de g code 
-        self.robot=Robot(logger=self.logger,manejo_Gcode=self.manejo_Gcode) #instancia de robot 
-        self.server =None
-        self.ayuda = Ayuda()
+    self.logger = Logger(log_file="log_trabajo.csv")
+    self.manejo_Gcode = ManejoGcode()
+    self.robot = Robot(logger=self.logger, manejo_Gcode=self.manejo_Gcode)
+    self.server = None
+    self.ayuda = Ayuda()
+    self.manejo_usuarios = ManejoUsuarios()  # Instancia del manejo de usuarios
+    self.usuario_autenticado = None
 
     def iniciar_Servidor(self):
         if self.server is None:
@@ -286,8 +289,22 @@ class PanelControl:
             
         else:
             print("El servidor no esta en ejecucion")
+    def autenticar_usuario(self):
+        nombre = input("Ingrese su nombre de usuario: ")
+        clave = input("Ingrese su contraseña: ")
+        if self.manejo_usuarios.validar_usuario(nombre, clave):
+            self.usuario_autenticado = nombre
+            self.logger.guardar_log("Usuario autenticado", "localhost", nombre, True)
+            print("Usuario autenticado con éxito.")
+        else:
+            self.logger.guardar_log("Intento de autenticación fallido", "localhost", nombre, False)
+            print("Usuario o contraseña incorrectos.")
 
     def mostrar_menu(self):
+        self.autenticar_usuario()  # Se solicita autenticación al inicio del menú
+        if self.usuario_autenticado is None:
+            print("No se pudo autenticar al usuario. Saliendo del panel.")
+            return
         while True:
             print("\n--- Panel de Control del Servidor ---")
             print("1. Conectar Robot")
