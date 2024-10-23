@@ -242,6 +242,7 @@ public:
                 client->homing();
                 break;
 <<<<<<< HEAD
+<<<<<<< HEAD
             case 11:
                 std::string archivo;
                 client->iniciarAprendizaje(archivo);
@@ -256,6 +257,15 @@ public:
                 break;
             }            
 >>>>>>> 7eaa81c34a213cef0a9ed673898571ff88b67be9
+=======
+            case 11: {
+                std::string archivo;  // Declarar la variable
+                std::cout << "Ingrese el nombre del archivo: "; // Solicitar al usuario que ingrese el nombre
+                std::cin >> archivo;  // Asignar el valor ingresado a la variable
+                client->iniciarAprendizaje(archivo); // Ahora se puede usar sin problemas
+                break;
+            }            
+>>>>>>> fc5de6e2b9ed702460e42f4f42ddcac80f4404e0
             case 12:
                 client->finalizarAprendizaje();
                 break;
