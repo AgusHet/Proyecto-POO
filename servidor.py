@@ -68,16 +68,27 @@ class Robot:
         else:
             return "Error: El robot no está conectado. Conéctelo antes de cambiar el estado de los motores."
 
-    def mover(self,posicion, velocidad):
+    def mover(self,posicion, velocidad,relatividad):
         if self.conexion and self.estado_motores:
+            posicion_anterior=self.posicion
             try:
                 pos_tupla=tuple(map(float,posicion.strip("()").split(",")))  #Transformamos en una tupla la posicion ingresada 
                 velocidad=float(velocidad)
             except ValueError:
                 print("Entrada invalida para posicion o velocidad.")
-            self.posicion=pos_tupla
-            self.logger.guardar_log (f"Movimiento a {posicion} con velocidad {velocidad}", "localhost", "admin", True)
             
+            if relatividad=="absoluto":
+                self.posicion=pos_tupla
+                self.logger.guardar_log (f"Movimiento a posicion absoluta {self.posicion} con velocidad {velocidad}", "localhost", "admin", True)
+            if relatividad=="relativo":
+                self.posicion[0]=posicion_anterior[0]+pos_tupla[0]
+                self.posicion[1]=posicion_anterior[1]+pos_tupla[1]
+                self.posicion[2]=posicion_anterior[2]+pos_tupla[2]
+                self.logger.guardar_log (f"Movimiento a posicion relativa {self.posicion} con velocidad {velocidad}", "localhost", "admin", True)
+
+
+
+
             instruccion_Gcode=f"G1 x{self.posicion[0]} Y {self.posicion[1]} Z {self.posicion[0]} F{velocidad}" #Ver si hay alguna forma especifica de ponerlo en g code 
             if self.aprender:
                 
@@ -340,7 +351,8 @@ class PanelControl:
             elif  opcion=="6":
                 pos=input("Ingrese posicion (x,y,z): ")
                 vel=input("Ingrese la velocidad:")
-                print(self.robot.mover(pos,vel))
+                rel=input("ingrese relativiadad (absoluto o relativo)")
+                print(self.robot.mover(pos,vel,rel))
 
             elif  opcion=="7":
                 print(self.robot.activar_Efector())
